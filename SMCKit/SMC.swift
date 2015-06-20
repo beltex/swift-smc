@@ -386,11 +386,42 @@ public struct SMC {
 
     http://stackoverflow.com/questions/22160746/fpe2-and-sp78-data-types
     */
+
     private enum DataType: String {
         case FLAG = "flag"
-        case FPE2 = "fpe2"
         case SFDS = "{fds"
+        case PWM  = "{pwm"
+        case LSO  = "{lso"
+        case ALA  = "{ala"
+        case CH8  = "ch8*"
+        
+        case FP1F = "fp1f"
+        case FP4C = "fp4c"
+        case FP5B = "fp5b"
+        case FP6A = "fp6a"
+        case FP79 = "fp79"
+        case FP88 = "fp88"
+        case FPA6 = "fpa6"
+        case FPC4 = "fpc4"
+        case FPE2 = "fpe2"
+        
+        case SP1E = "sp1e"
+        case SP3C = "sp3c"
+        case SP4B = "sp4b"
+        case SP5A = "sp5a"
+        case SP69 = "sp69"
         case SP78 = "sp78"
+        case SP87 = "sp87"
+        case SP96 = "sp96"
+        case SPB4 = "spb4"
+        case SPF0 = "spf0"
+        
+        case SI8  = "si8 "
+        case SI16 = "si16"
+        case UINT8 = "ui8 "
+        case UINT16 = "ui16"
+        case UINT32 = "ui32"
+        
     }
 
 
