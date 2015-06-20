@@ -1106,7 +1106,83 @@ public struct SMC {
 
         return (data, dataType, dataSize, result, outputStruct.result)
     }
-
+    
+    /**
+    Read data from the SMC
+    
+    :param: keyIndex The SMC key index
+    :returns: Raw data return from the SMC
+    :returns: IOReturn IOKit return code
+    :returns: kSMC SMC return code
+    */
+    private func readSMCByIndex(keyIndex: UInt32) -> (data     : [UInt8],
+        dataType : UInt32,
+        dataSize : IOByteCount,
+        IOReturn : kern_return_t,
+        kSMC     : UInt8) {
+            var result: kern_return_t
+            var inputStruct  = SMCParamStruct()
+            var outputStruct = SMCParamStruct()
+            var data         = [UInt8](count: 32, repeatedValue: 0)
+            
+            
+            // First call to AppleSMC - get key info
+            inputStruct.data8 = UInt8(Selector.kSMCGetKeyInfo.rawValue)
+            inputStruct.data32 = keyIndex
+            
+            result = callSMC(&inputStruct, outputStruct: &outputStruct)
+            
+            // Store for return - we only get this info on key info calls
+            let dataType = outputStruct.keyInfo.dataType
+            let dataSize = outputStruct.keyInfo.dataSize
+            
+            if (result != kIOReturnSuccess ||
+                outputStruct.result != kSMC.kSMCSuccess.rawValue) {
+                    return (data, dataType, dataSize, result, outputStruct.result)
+            }
+            
+            // Second call to AppleSMC - now we can get the data
+            inputStruct.keyInfo.dataSize = outputStruct.keyInfo.dataSize
+            inputStruct.data8 = UInt8(Selector.kSMCReadKey.rawValue)
+            
+            result = callSMC(&inputStruct, outputStruct: &outputStruct)
+            
+            // Set the data
+            data[0]  = outputStruct.bytes_0
+            data[1]  = outputStruct.bytes_1
+            data[2]  = outputStruct.bytes_2
+            data[3]  = outputStruct.bytes_3
+            data[4]  = outputStruct.bytes_4
+            data[5]  = outputStruct.bytes_5
+            data[6]  = outputStruct.bytes_6
+            data[7]  = outputStruct.bytes_7
+            data[8]  = outputStruct.bytes_8
+            data[9]  = outputStruct.bytes_9
+            data[10] = outputStruct.bytes_10
+            data[11] = outputStruct.bytes_11
+            data[12] = outputStruct.bytes_12
+            data[13] = outputStruct.bytes_13
+            data[14] = outputStruct.bytes_14
+            data[15] = outputStruct.bytes_15
+            data[16] = outputStruct.bytes_16
+            data[17] = outputStruct.bytes_17
+            data[18] = outputStruct.bytes_18
+            data[19] = outputStruct.bytes_19
+            data[20] = outputStruct.bytes_20
+            data[21] = outputStruct.bytes_21
+            data[22] = outputStruct.bytes_22
+            data[23] = outputStruct.bytes_23
+            data[24] = outputStruct.bytes_24
+            data[25] = outputStruct.bytes_25
+            data[26] = outputStruct.bytes_26
+            data[27] = outputStruct.bytes_27
+            data[28] = outputStruct.bytes_28
+            data[29] = outputStruct.bytes_29
+            data[30] = outputStruct.bytes_30
+            data[31] = outputStruct.bytes_31
+            
+            return (data, dataType, dataSize, result, outputStruct.result)
+    }
 
     /**
     Write data to the SMC.
