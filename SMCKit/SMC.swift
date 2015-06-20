@@ -1054,12 +1054,46 @@ public struct SMC {
 
         return (answer, result.IOReturn, result.kSMC)
     }
+    
+    /**
+    Read data from the SMC
+    
+    :param: keyID The SMC key index
+    :returns: Raw data return from the SMC
+    :returns: IOReturn IOKit return code
+    :returns: kSMC SMC return code
+    */
+    private func getAllKeys() -> (dict      : Dictionary<String, Any>,
+        IOReturn : kern_return_t,
+        kSMC     : UInt8) {
+            let result = getNumSMCKeys()
+            if result.IOReturn != kIOReturnSuccess ||
+                result.kSMC     != kSMC.kSMCSuccess.rawValue {
+                    return (Dictionary<String, Any>(), result.IOReturn, result.kSMC)
+            }
+            
+            var returnDictionary:Dictionary<String, Any> = ["#KEY" : result.numKeys]
+            var i:UInt32 = 0
+            while i < result.numKeys {
+                let indexResult = readSMCByIndex(i)
+                if indexResult.IOReturn != kIOReturnSuccess ||
+                    indexResult.kSMC     != kSMC.kSMCSuccess.rawValue {
+                        continue
+                }
+                returnDictionary["bruh"] = decodeType(indexResult.data, dataType: indexResult.dataType)
+            }
+            
+            return (returnDictionary, result.IOReturn, result.kSMC)
+    }
 
 
     //--------------------------------------------------------------------------
     // MARK: PRIVATE METHODS
     //--------------------------------------------------------------------------
-
+    
+    private func decodeType(data : [UInt8], dataType : UInt32) -> Any {
+        
+    }
 
     /**
     Read data from the SMC
