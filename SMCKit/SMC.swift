@@ -1080,7 +1080,7 @@ public struct SMC {
                     indexResult.kSMC     != kSMC.kSMCSuccess.rawValue {
                         continue
                 }
-                returnDictionary["bruh"] = decodeType(indexResult.data, dataType: indexResult.dataType)
+                returnDictionary[SMC.decodeSMCKey(indexResult.key)] = decodeType(indexResult.data, dataType: indexResult.dataType)
             }
             
             return (returnDictionary, result.IOReturn, result.kSMC)
@@ -1183,6 +1183,7 @@ public struct SMC {
     private func readSMCByIndex(keyIndex: UInt32) -> (data     : [UInt8],
         dataType : UInt32,
         dataSize : IOByteCount,
+        key      : UInt32,
         IOReturn : kern_return_t,
         kSMC     : UInt8) {
             var result: kern_return_t
@@ -1199,11 +1200,12 @@ public struct SMC {
             
             // Store for return - we only get this info on key info calls
             let dataType = outputStruct.keyInfo.dataType
+            let key      = outputStruct.key
             let dataSize = outputStruct.keyInfo.dataSize
             
             if (result != kIOReturnSuccess ||
                 outputStruct.result != kSMC.kSMCSuccess.rawValue) {
-                    return (data, dataType, dataSize, result, outputStruct.result)
+                    return (data, dataType, dataSize, key, result, outputStruct.result)
             }
             
             // Second call to AppleSMC - now we can get the data
@@ -1246,7 +1248,7 @@ public struct SMC {
             data[30] = outputStruct.bytes_30
             data[31] = outputStruct.bytes_31
             
-            return (data, dataType, dataSize, result, outputStruct.result)
+            return (data, dataType, dataSize, key, result, outputStruct.result)
     }
 
     /**
