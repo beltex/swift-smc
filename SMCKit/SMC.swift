@@ -1266,64 +1266,19 @@ public struct SMC {
             var outputStruct = SMCParamStruct()
             var data         = [UInt8](count: 32, repeatedValue: 0)
             
-            
-            // First call to AppleSMC - get key info
-            inputStruct.data8 = UInt8(Selector.kSMCGetKeyInfo.rawValue)
+            // First call to AppleSMC - get key info from index
+            inputStruct.data8 = UInt8(Selector.kSMCGetKeyFromIndex.rawValue)
             inputStruct.data32 = keyIndex
             
+            // This call only allows us to get a key string, nothing else
             result = callSMC(&inputStruct, outputStruct: &outputStruct)
             
-            // Store for return - we only get this info on key info calls
-            let dataType = outputStruct.keyInfo.dataType
-            let key      = outputStruct.key
-            let dataSize = outputStruct.keyInfo.dataSize
-            
-            if (result != kIOReturnSuccess ||
-                outputStruct.result != kSMC.kSMCSuccess.rawValue) {
-                    return (data, dataType, dataSize, key, result, outputStruct.result)
+            //NSLog("hi%@", SMC.decodeSMCKey(outputStruct.key))
+            if (result != kIOReturnSuccess) {
+                    return (data, 0, 0, outputStruct.key, result, outputStruct.result)
             }
-            
-            // Second call to AppleSMC - now we can get the data
-            inputStruct.keyInfo.dataSize = outputStruct.keyInfo.dataSize
-            inputStruct.data8 = UInt8(Selector.kSMCReadKey.rawValue)
-            
-            result = callSMC(&inputStruct, outputStruct: &outputStruct)
-            
-            // Set the data
-            data[0]  = outputStruct.bytes_0
-            data[1]  = outputStruct.bytes_1
-            data[2]  = outputStruct.bytes_2
-            data[3]  = outputStruct.bytes_3
-            data[4]  = outputStruct.bytes_4
-            data[5]  = outputStruct.bytes_5
-            data[6]  = outputStruct.bytes_6
-            data[7]  = outputStruct.bytes_7
-            data[8]  = outputStruct.bytes_8
-            data[9]  = outputStruct.bytes_9
-            data[10] = outputStruct.bytes_10
-            data[11] = outputStruct.bytes_11
-            data[12] = outputStruct.bytes_12
-            data[13] = outputStruct.bytes_13
-            data[14] = outputStruct.bytes_14
-            data[15] = outputStruct.bytes_15
-            data[16] = outputStruct.bytes_16
-            data[17] = outputStruct.bytes_17
-            data[18] = outputStruct.bytes_18
-            data[19] = outputStruct.bytes_19
-            data[20] = outputStruct.bytes_20
-            data[21] = outputStruct.bytes_21
-            data[22] = outputStruct.bytes_22
-            data[23] = outputStruct.bytes_23
-            data[24] = outputStruct.bytes_24
-            data[25] = outputStruct.bytes_25
-            data[26] = outputStruct.bytes_26
-            data[27] = outputStruct.bytes_27
-            data[28] = outputStruct.bytes_28
-            data[29] = outputStruct.bytes_29
-            data[30] = outputStruct.bytes_30
-            data[31] = outputStruct.bytes_31
-            
-            return (data, dataType, dataSize, key, result, outputStruct.result)
+            let readCall = readSMC(SMC.decodeSMCKey(outputStruct.key))
+            return (readCall.data, readCall.dataType, readCall.dataSize, outputStruct.key, readCall.IOReturn, readCall.kSMC)
     }
 
     /**
@@ -1415,38 +1370,50 @@ public struct SMC {
     */
     private func callSMC(inout inputStruct : SMCParamStruct,
                          inout outputStruct: SMCParamStruct) -> kern_return_t {
-        let inputStructSize  = strideof(SMCParamStruct)
-        var outputStructSize = strideof(SMCParamStruct)
-
-
-        #if DEBUG
-            // Depending how far off this is from 80, call may or may not
-            // work
-            if inputStructSize != 80 {
-                println("WARNING - \(__FILE__):\(__FUNCTION__) - SMCParamStruct"
+        return callSMC(&inputStruct, outputStruct: &outputStruct, selector: Selector.kSMCHandleYPCEvent.rawValue)
+    }
+    
+    /**
+    Make a call to the SMC
+    
+    :param: inputStruct Struct that holds data telling the SMC what you want
+    :param: outputStruct Struct holding the SMC's response
+    :returns: IOKit return code
+    */
+    private func callSMC(inout inputStruct : SMCParamStruct,
+        inout outputStruct: SMCParamStruct, selector: UInt32) -> kern_return_t {
+            let inputStructSize  = strideof(SMCParamStruct)
+            var outputStructSize = strideof(SMCParamStruct)
+            
+            
+            #if DEBUG
+                // Depending how far off this is from 80, call may or may not
+                // work
+                if inputStructSize != 80 {
+                    println("WARNING - \(__FILE__):\(__FUNCTION__) - SMCParamStruct"
                         + " size is \(inputStructSize) bytes. Expected 80")
-
-                return kIOReturnBadArgument
-            }
-        #endif
-
-
-        let result = IOConnectCallStructMethod(conn,
-                                           Selector.kSMCHandleYPCEvent.rawValue,
-                                           &inputStruct,
-                                           inputStructSize,
-                                           &outputStruct,
-                                           &outputStructSize)
-
-
-        #if DEBUG
-            if result != kIOReturnSuccess {
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
+                    
+                    return kIOReturnBadArgument
+                }
+            #endif
+            
+            
+            let result = IOConnectCallStructMethod(conn,
+                selector,
+                &inputStruct,
+                inputStructSize,
+                &outputStruct,
+                &outputStructSize)
+            
+            
+            #if DEBUG
+                if result != kIOReturnSuccess {
+                    println("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
                         "\(result) - kSMC = \(outputStruct.result)")
-            }
-        #endif
-
-        return result
+                }
+            #endif
+            
+            return result
     }
 
 
