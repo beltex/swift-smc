@@ -26,11 +26,26 @@
 
 import IOKit
 import Foundation
+import Darwin
 
 //------------------------------------------------------------------------------
 // MARK: GLOBAL PUBLIC PROPERTIES
 //------------------------------------------------------------------------------
 
+
+/*
+Common endianness swap functions, wrapping Darwin/XNU source code functions.
+Most of these are not relevant to us, but for the sake of completeness.
+
+https://gist.github.com/penman/654f585b6020e5655132
+*/
+let isLittleEndian = Int(OSHostByteOrder()) == OSLittleEndian
+let htons  = isLittleEndian ? _OSSwapInt16 : { $0 }
+let htonl  = isLittleEndian ? _OSSwapInt32 : { $0 }
+let htonll = isLittleEndian ? _OSSwapInt64 : { $0 }
+let ntohs  = isLittleEndian ? _OSSwapInt16 : { $0 }
+let ntohl  = isLittleEndian ? _OSSwapInt32 : { $0 }
+let ntohll = isLittleEndian ? _OSSwapInt64 : { $0 }
 
 /*
 I/O Kit common error codes - as defined in <IOKit/IOReturn.h>
@@ -383,7 +398,7 @@ public struct SMC {
     SMC data types - 4 byte multi-character constants
 
     Sources: See Temperature enum
-
+    https://github.com/stny/Thermo/blob/master/Thermo/smc/smc.h
     http://stackoverflow.com/questions/22160746/fpe2-and-sp78-data-types
     */
 
@@ -421,7 +436,6 @@ public struct SMC {
         case UINT8 = "ui8 "
         case UINT16 = "ui16"
         case UINT32 = "ui32"
-        
     }
 
 
@@ -1091,8 +1105,68 @@ public struct SMC {
     // MARK: PRIVATE METHODS
     //--------------------------------------------------------------------------
     
-    private func decodeType(data : [UInt8], dataType : UInt32) -> Any {
-        
+    private func decodeType(data : [UInt8], dataType : UInt32, dataSize : IOByteCount) -> Any? {
+        if (SMC.decodeSMCKey(dataType) == "flag") {
+            return (data[0] == 1) ? true : false;
+        } else if (SMC.decodeSMCKey(dataType) == "{pwm") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) * 100 / 65536.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp1f") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 32768.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp4c") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 4096.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp5b") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 2048.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp6a") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 1024.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp79") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 512.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp88") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 256.0
+        } else if (SMC.decodeSMCKey(dataType) == "fpa6") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 64.0
+        } else if (SMC.decodeSMCKey(dataType) == "fpc4") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 16.0
+        } else if (SMC.decodeSMCKey(dataType) == "fpe2") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 4.0
+        } else if (SMC.decodeSMCKey(dataType) == "sp1e") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 16384.0
+        } else if (SMC.decodeSMCKey(dataType) == "ch8*") {
+            let bytes = NSData(bytes: data, length: sizeofValue(data))
+            let str = NSString(data: bytes, encoding: NSASCIIStringEncoding)
+            return str as? String
+        } else if (SMC.decodeSMCKey(dataType) == "sp3c") {
+            return Double(data[0]) + Double(data[1]/10)
+        } else {
+            return nil
+        }
+
+        /*case SMC.encodeSMCKey(SMC.DataType.SP4B.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP5A.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP69.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP78.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP87.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP96.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SPB4.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SPF0.rawValue):
+            return
+            
+        case SMC.encodeSMCKey(SMC.DataType.SI8.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SI16.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.UINT8.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.UINT16.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.UINT32.rawValue):
+            return*/
     }
 
     /**
