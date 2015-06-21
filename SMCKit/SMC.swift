@@ -1077,24 +1077,25 @@ public struct SMC {
     :returns: IOReturn IOKit return code
     :returns: kSMC SMC return code
     */
-    private func getAllKeys() -> (dict      : Dictionary<String, Any>,
+    public func getAllKeys() -> (dict      : Dictionary<String, Any>?,
         IOReturn : kern_return_t,
         kSMC     : UInt8) {
             let result = getNumSMCKeys()
             if result.IOReturn != kIOReturnSuccess ||
                 result.kSMC     != kSMC.kSMCSuccess.rawValue {
-                    return (Dictionary<String, Any>(), result.IOReturn, result.kSMC)
+                    return (nil, result.IOReturn, result.kSMC)
             }
             
             var returnDictionary:Dictionary<String, Any> = ["#KEY" : result.numKeys]
             var i:UInt32 = 0
             while i < result.numKeys {
+                i++
                 let indexResult = readSMCByIndex(i)
-                if indexResult.IOReturn != kIOReturnSuccess ||
-                    indexResult.kSMC     != kSMC.kSMCSuccess.rawValue {
+                if indexResult.IOReturn != kIOReturnSuccess {
                         continue
                 }
-                returnDictionary[SMC.decodeSMCKey(indexResult.key)] = decodeType(indexResult.data, dataType: indexResult.dataType)
+                returnDictionary[SMC.decodeSMCKey(indexResult.key)] = (decodeType(indexResult.data, dataType: indexResult.dataType, dataSize: indexResult.dataSize), SMC.decodeSMCKey(indexResult.dataType))
+                //NSLog("%@", SMC.decodeSMCKey(indexResult.dataType))
             }
             
             return (returnDictionary, result.IOReturn, result.kSMC)
