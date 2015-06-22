@@ -130,6 +130,11 @@ class SMCKitTests: XCTestCase {
         XCTAssertTrue(smc.isKeyValid("#KEY").valid)     // Number of keys
     }
     
+    func testGetAllKeys() {
+        var dict = smc.getAllKeys()
+        XCTAssertFalse((dict.dict==nil), "Empty SMC ?!")
+    }
+    
     func testODD() {
         // Cross check via DiscRecording framework
         //
