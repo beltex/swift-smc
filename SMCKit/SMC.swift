@@ -711,7 +711,7 @@ public struct SMC {
         }
 
         return SMCKeys.sort({ Temperature.allValues[$0]! <
-                                 Temperature.allValues[$1]! })
+                              Temperature.allValues[$1]! })
     }
 
 
@@ -1409,6 +1409,35 @@ public struct SMC {
             #if DEBUG
                 if result != kIOReturnSuccess {
                     print("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
+=======
+        let inputStructSize  = strideof(SMCParamStruct)
+        var outputStructSize = strideof(SMCParamStruct)
+
+
+        #if DEBUG
+            // Depending how far off this is from 80, call may or may not
+            // work
+            if inputStructSize != 80 {
+                print("WARNING - \(__FILE__):\(__FUNCTION__) - SMCParamStruct"
+                        + " size is \(inputStructSize) bytes. Expected 80")
+
+                return kIOReturnBadArgument
+            }
+        #endif
+
+
+        let result = IOConnectCallStructMethod(conn,
+                                           Selector.kSMCHandleYPCEvent.rawValue,
+                                           &inputStruct,
+                                           inputStructSize,
+                                           &outputStruct,
+                                           &outputStructSize)
+
+
+        #if DEBUG
+            if result != kIOReturnSuccess {
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
+>>>>>>> cecce2ebbb756f4037010c980870bc6b90d8f43d
                         "\(result) - kSMC = \(outputStruct.result)")
                 }
             #endif

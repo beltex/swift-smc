@@ -33,7 +33,7 @@ For more see:
 
 ### Requirements
 
-- [Xcode 6.3.2](https://developer.apple.com/xcode/downloads/)
+- [Xcode 7 Beta 2](https://developer.apple.com/xcode/downloads/)
 - OS X 10.9+
     - This is due to Swift
 
@@ -79,20 +79,17 @@ NORTHBRIDGE_PROXIMITY
   53.0°C
 PALM_REST
   34.0°C
-
 -- FAN --
 [id 0] Exhaust
   Current:  1324 RPM
   Min:      1299 RPM
   Max:      6199 RPM
-
 -- POWER --
 AC Present:       true
 Battery Powered:  false
 Charging:         false
 Battery Ok:       true
 Max Batteries:    1
-
 -- MISC --
 Disc in ODD:      false
 ```
