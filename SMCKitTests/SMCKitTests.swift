@@ -130,6 +130,11 @@ class SMCKitTests: XCTestCase {
         XCTAssertTrue(smc.isKeyValid("#KEY").valid)     // Number of keys
     }
     
+    func testGetAllKeys() {
+        let dict = smc.getAllKeys()
+        XCTAssertFalse((dict.dict==nil), "Empty SMC ?!")
+    }
+    
     func testODD() {
         // Cross check via DiscRecording framework
         //
@@ -196,7 +201,7 @@ class SMCKitTests: XCTestCase {
         // TODO: Simplify I/O Kit calls here - can do it in a single call
         // TODO: What if its a MacBook with a removable battery and its out?
         let service = IOServiceGetMatchingService(kIOMasterPortDefault,
-                      IOServiceNameMatching("AppleSmartBattery"))
+               IOServiceNameMatching("AppleSmartBattery"))
         if (service != 0) {
             isLaptop = true
             

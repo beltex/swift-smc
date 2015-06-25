@@ -26,11 +26,26 @@
 
 import IOKit
 import Foundation
+import Darwin
 
 //------------------------------------------------------------------------------
 // MARK: GLOBAL PUBLIC PROPERTIES
 //------------------------------------------------------------------------------
 
+
+/*
+Common endianness swap functions, wrapping Darwin/XNU source code functions.
+Most of these are not relevant to us, but for the sake of completeness.
+
+https://gist.github.com/penman/654f585b6020e5655132
+*/
+let isLittleEndian = Int(OSHostByteOrder()) == OSLittleEndian
+let htons  = isLittleEndian ? _OSSwapInt16 : { $0 }
+let htonl  = isLittleEndian ? _OSSwapInt32 : { $0 }
+let htonll = isLittleEndian ? _OSSwapInt64 : { $0 }
+let ntohs  = isLittleEndian ? _OSSwapInt16 : { $0 }
+let ntohl  = isLittleEndian ? _OSSwapInt32 : { $0 }
+let ntohll = isLittleEndian ? _OSSwapInt64 : { $0 }
 
 /*
 I/O Kit common error codes - as defined in <IOKit/IOReturn.h>
@@ -383,14 +398,44 @@ public struct SMC {
     SMC data types - 4 byte multi-character constants
 
     Sources: See Temperature enum
-
+    https://github.com/stny/Thermo/blob/master/Thermo/smc/smc.h
     http://stackoverflow.com/questions/22160746/fpe2-and-sp78-data-types
     */
+
     private enum DataType: String {
         case FLAG = "flag"
-        case FPE2 = "fpe2"
         case SFDS = "{fds"
+        case PWM  = "{pwm"
+        case LSO  = "{lso"
+        case ALA  = "{ala"
+        case CH8  = "ch8*"
+        
+        case FP1F = "fp1f"
+        case FP4C = "fp4c"
+        case FP5B = "fp5b"
+        case FP6A = "fp6a"
+        case FP79 = "fp79"
+        case FP88 = "fp88"
+        case FPA6 = "fpa6"
+        case FPC4 = "fpc4"
+        case FPE2 = "fpe2"
+        
+        case SP1E = "sp1e"
+        case SP3C = "sp3c"
+        case SP4B = "sp4b"
+        case SP5A = "sp5a"
+        case SP69 = "sp69"
         case SP78 = "sp78"
+        case SP87 = "sp87"
+        case SP96 = "sp96"
+        case SPB4 = "spb4"
+        case SPF0 = "spf0"
+        
+        case SI8  = "si8 "
+        case SI16 = "si16"
+        case UINT8 = "ui8 "
+        case UINT16 = "ui16"
+        case UINT32 = "ui32"
     }
 
 
@@ -566,7 +611,7 @@ public struct SMC {
 
 
         let service = IOServiceGetMatchingService(kIOMasterPortDefault,
-                      IOServiceMatching(SMC.IOSERVICE_SMC))
+                     IOServiceMatching(SMC.IOSERVICE_SMC))
 
         if (service == 0) {
             #if DEBUG
@@ -617,6 +662,8 @@ public struct SMC {
     - parameter key: The SMC key to check. 4 byte multi-character constant. Must be
                 4 characters in length.
     - returns: valid True if the key is found, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isKeyValid(key: String) -> (valid    : Bool,
                                             IOReturn : kern_return_t,
@@ -663,8 +710,8 @@ public struct SMC {
             }
         }
 
-        return SMCKeys.sort { Temperature.allValues[$0]! <
-                              Temperature.allValues[$1]! }
+        return SMCKeys.sort({ Temperature.allValues[$0]! <
+                              Temperature.allValues[$1]! })
     }
 
 
@@ -672,6 +719,8 @@ public struct SMC {
     Get the number of valid SMC keys for this machine.
 
     - returns: numKeys The number of SMC keys
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getNumSMCKeys() -> (numKeys  : UInt32,
                                     IOReturn : kern_return_t,
@@ -696,6 +745,8 @@ public struct SMC {
                  Celsius.
     - returns: Temperature of sensor. If the sensor is not found, or an error
               occurs, return will be zero
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getTemperature(key  : Temperature,
                                unit : TemperatureUnit = .Celsius) ->
@@ -732,6 +783,8 @@ public struct SMC {
     TODO: What about the old Mac Pro that can have 2 ODD?
 
     - returns: flag True if there is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isOpticalDiskDriveFull() -> (flag     : Bool,
                                              IOReturn : kern_return_t,
@@ -755,6 +808,8 @@ public struct SMC {
     be 0, and 1 for laptops.
 
     - returns: count Max number of batteries supported by the machine
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func maxNumberBatteries() -> (count    : UInt,
                                          IOReturn : kern_return_t,
@@ -770,6 +825,8 @@ public struct SMC {
     Is the machine being powered by the battery?
 
     - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isBatteryPowered() -> (flag     : Bool,
                                        IOReturn : kern_return_t,
@@ -787,6 +844,8 @@ public struct SMC {
     Is the machine charing?
 
     - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isCharging() -> (flag     : Bool,
                                  IOReturn : kern_return_t,
@@ -804,6 +863,8 @@ public struct SMC {
     Is AC power present?
 
     - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isACPresent() -> (flag     : Bool,
                                   IOReturn : kern_return_t,
@@ -822,6 +883,8 @@ public struct SMC {
     if service battery warning is given by OS X, this still seems to return OK.
 
     - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isBatteryOk() -> (flag     : Bool,
                                   IOReturn : kern_return_t,
@@ -845,6 +908,8 @@ public struct SMC {
 
     - parameter fanNum: The number of the fan to check
     - returns: name The name of the fan. Return will be empty on error.
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanName(fanNumber: UInt) -> (name     : String,
                                                 IOReturn : kern_return_t,
@@ -886,6 +951,8 @@ public struct SMC {
     - parameter fanNum: The number of the fan to check
     - returns: rpm The fan RPM. If the fan is not found, or an error occurs,
                   return will be zero
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanRPM(fanNumber: UInt) -> (rpm      : UInt,
                                                IOReturn : kern_return_t,
@@ -901,6 +968,8 @@ public struct SMC {
     - parameter fanNum: The number of the fan to check
     - returns: rpm The minimum fan RPM. If the fan is not found, or an error
                   occurs, return will be zero
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanMinRPM(fanNumber: UInt) -> (rpm      : UInt,
                                                   IOReturn : kern_return_t,
@@ -916,6 +985,8 @@ public struct SMC {
     - parameter fanNum: The number of the fan to check
     - returns: rpm The maximum fan RPM. If the fan is not found, or an error
                   occurs, return will be zero
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanMaxRPM(fanNumber: UInt) -> (rpm      : UInt,
                                                   IOReturn : kern_return_t,
@@ -929,6 +1000,8 @@ public struct SMC {
     Get the number of fans on this machine.
 
     - returns: numFans The number of fans
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getNumFans() -> (numFans  : UInt,
                                  IOReturn : kern_return_t,
@@ -995,18 +1068,115 @@ public struct SMC {
 
         return (answer, result.IOReturn, result.kSMC)
     }
+    
+    /**
+    Read data from the SMC
+    
+    - parameter keyID: The SMC key index
+    - returns: Raw data return from the SMC
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
+    */
+    public func getAllKeys() -> (dict      : Dictionary<String, Any>?,
+        IOReturn : kern_return_t,
+        kSMC     : UInt8) {
+            let result = getNumSMCKeys()
+            if result.IOReturn != kIOReturnSuccess ||
+                result.kSMC     != kSMC.kSMCSuccess.rawValue {
+                    return (nil, result.IOReturn, result.kSMC)
+            }
+            
+            var returnDictionary:Dictionary<String, Any> = ["#KEY" : result.numKeys]
+            var i:UInt32 = 0
+            while i < result.numKeys {
+                i++
+                let indexResult = readSMCByIndex(i)
+                if indexResult.IOReturn != kIOReturnSuccess {
+                        continue
+                }
+                returnDictionary[SMC.decodeSMCKey(indexResult.key)] = (decodeType(indexResult.data, dataType: indexResult.dataType, dataSize: indexResult.dataSize), SMC.decodeSMCKey(indexResult.dataType))
+                //NSLog("%@", SMC.decodeSMCKey(indexResult.dataType))
+            }
+            
+            return (returnDictionary, result.IOReturn, result.kSMC)
+    }
 
 
     //--------------------------------------------------------------------------
     // MARK: PRIVATE METHODS
     //--------------------------------------------------------------------------
+    
+    private func decodeType(data : [UInt8], dataType : UInt32, dataSize : IOByteCount) -> Any? {
+        if (SMC.decodeSMCKey(dataType) == "flag") {
+            return (data[0] == 1) ? true : false;
+        } else if (SMC.decodeSMCKey(dataType) == "{pwm") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) * 100 / 65536.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp1f") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 32768.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp4c") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 4096.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp5b") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 2048.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp6a") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 1024.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp79") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 512.0
+        } else if (SMC.decodeSMCKey(dataType) == "fp88") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 256.0
+        } else if (SMC.decodeSMCKey(dataType) == "fpa6") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 64.0
+        } else if (SMC.decodeSMCKey(dataType) == "fpc4") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 16.0
+        } else if (SMC.decodeSMCKey(dataType) == "fpe2") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 4.0
+        } else if (SMC.decodeSMCKey(dataType) == "sp1e") {
+            return Float(ntohs(UnsafePointer<UInt16>(data).memory)) / 16384.0
+        } else if (SMC.decodeSMCKey(dataType) == "ch8*") {
+            let bytes = NSData(bytes: data, length: sizeofValue(data))
+            let str = NSString(data: bytes, encoding: NSASCIIStringEncoding)
+            return str as? String
+        } else if (SMC.decodeSMCKey(dataType) == "sp3c") {
+            return Double(data[0]) + Double(data[1]/10)
+        } else {
+            return nil
+        }
 
+        /*case SMC.encodeSMCKey(SMC.DataType.SP4B.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP5A.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP69.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP78.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP87.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SP96.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SPB4.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SPF0.rawValue):
+            return
+            
+        case SMC.encodeSMCKey(SMC.DataType.SI8.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.SI16.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.UINT8.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.UINT16.rawValue):
+            return
+        case SMC.encodeSMCKey(SMC.DataType.UINT32.rawValue):
+            return*/
+    }
 
     /**
     Read data from the SMC
 
     - parameter key: The SMC key
     - returns: Raw data return from the SMC
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     private func readSMC(key: String) -> (data     : [UInt8],
                                           dataType : UInt32,
@@ -1076,7 +1246,40 @@ public struct SMC {
 
         return (data, dataType, dataSize, result, outputStruct.result)
     }
-
+    
+    /**
+    Read data from the SMC
+    
+    - parameter keyIndex: The SMC key index
+    - returns: Raw data return from the SMC
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
+    */
+    private func readSMCByIndex(keyIndex: UInt32) -> (data     : [UInt8],
+        dataType : UInt32,
+        dataSize : IOByteCount,
+        key      : UInt32,
+        IOReturn : kern_return_t,
+        kSMC     : UInt8) {
+            var result: kern_return_t
+            var inputStruct  = SMCParamStruct()
+            var outputStruct = SMCParamStruct()
+            let data         = [UInt8](count: 32, repeatedValue: 0)
+            
+            // First call to AppleSMC - get key info from index
+            inputStruct.data8 = UInt8(Selector.kSMCGetKeyFromIndex.rawValue)
+            inputStruct.data32 = keyIndex
+            
+            // This call only allows us to get a key string, nothing else
+            result = callSMC(&inputStruct, outputStruct: &outputStruct)
+            
+            //NSLog("hi%@", SMC.decodeSMCKey(outputStruct.key))
+            if (result != kIOReturnSuccess) {
+                    return (data, 0, 0, outputStruct.key, result, outputStruct.result)
+            }
+            let readCall = readSMC(SMC.decodeSMCKey(outputStruct.key))
+            return (readCall.data, readCall.dataType, readCall.dataSize, outputStruct.key, readCall.IOReturn, readCall.kSMC)
+    }
 
     /**
     Write data to the SMC.
@@ -1167,6 +1370,46 @@ public struct SMC {
     */
     private func callSMC(inout inputStruct : SMCParamStruct,
                          inout outputStruct: SMCParamStruct) -> kern_return_t {
+        return callSMC(&inputStruct, outputStruct: &outputStruct, selector: Selector.kSMCHandleYPCEvent.rawValue)
+    }
+    
+    /**
+    Make a call to the SMC
+    
+    - parameter inputStruct: Struct that holds data telling the SMC what you want
+    - parameter outputStruct: Struct holding the SMC's response
+    - returns: IOKit return code
+    */
+    private func callSMC(inout inputStruct : SMCParamStruct,
+        inout outputStruct: SMCParamStruct, selector: UInt32) -> kern_return_t {
+            let inputStructSize  = strideof(SMCParamStruct)
+            var outputStructSize = strideof(SMCParamStruct)
+            
+            
+            #if DEBUG
+                // Depending how far off this is from 80, call may or may not
+                // work
+                if inputStructSize != 80 {
+                    print("WARNING - \(__FILE__):\(__FUNCTION__) - SMCParamStruct"
+                        + " size is \(inputStructSize) bytes. Expected 80")
+                    
+                    return kIOReturnBadArgument
+                }
+            #endif
+            
+            
+            let result = IOConnectCallStructMethod(conn,
+                selector,
+                &inputStruct,
+                inputStructSize,
+                &outputStruct,
+                &outputStructSize)
+            
+            
+            #if DEBUG
+                if result != kIOReturnSuccess {
+                    print("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
+=======
         let inputStructSize  = strideof(SMCParamStruct)
         var outputStructSize = strideof(SMCParamStruct)
 
@@ -1194,11 +1437,12 @@ public struct SMC {
         #if DEBUG
             if result != kIOReturnSuccess {
                 print("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
+>>>>>>> cecce2ebbb756f4037010c980870bc6b90d8f43d
                         "\(result) - kSMC = \(outputStruct.result)")
-            }
-        #endif
-
-        return result
+                }
+            #endif
+            
+            return result
     }
 
 
@@ -1224,15 +1468,8 @@ public struct SMC {
         // to get CString
         key.getCString(&buffer, maxLength: CStringCount,
                                 encoding: String.defaultCStringEncoding())
-
-        // FIXME: Have to split this up due to a compiler regression in Xcode
-        //        7 Beta 1. See test 24890 in below
-        // https://github.com/practicalswift/swift-compiler-crashes/pull/75
-        let encoded = UInt32(buffer[0]) << 24
-        return encoded +
-               UInt32(buffer[1]) << 16 +
-               UInt32(buffer[2]) << 8  +
-               UInt32(buffer[3])
+        let temp32 = UInt32(buffer[0]) << 24 + UInt32(buffer[1]) << 16
+        return temp32 + UInt32(buffer[2]) << 8 + UInt32(buffer[3])
     }
 
 
