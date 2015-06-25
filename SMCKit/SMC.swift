@@ -193,8 +193,8 @@ private let SUB_IOKIT_COMMON: UInt32 = (0 & 0xfff) << 14
 /**
 Based on macro of the same name in <IOKit/IOReturn.h>. Generates the error code.
 
-:param: code The specific I/O Kit error code. Last 14 bits.
-:returns: Full 32 bit error code.
+- parameter code: The specific I/O Kit error code. Last 14 bits.
+- returns: Full 32 bit error code.
 */
 private func iokit_common_err(code: UInt32) -> kern_return_t {
     // Overflow otherwise
@@ -597,13 +597,13 @@ public struct SMC {
     /**
     Open a connection to the SMC
 
-    :returns: kIOReturnSuccess on successful connection to the SMC.
+    - returns: kIOReturnSuccess on successful connection to the SMC.
     */
     public mutating func open() -> kern_return_t {
         // TODO: Why does calling open() twice (without below) return success?
         if (conn != 0) {
             #if DEBUG
-                println("WARNING - \(__FILE__):\(__FUNCTION__) - " +
+                print("WARNING - \(__FILE__):\(__FUNCTION__) - " +
                         "\(SMC.IOSERVICE_SMC) connection already open")
             #endif
             return kIOReturnStillOpen
@@ -611,11 +611,11 @@ public struct SMC {
 
 
         let service = IOServiceGetMatchingService(kIOMasterPortDefault,
-                     IOServiceMatching(SMC.IOSERVICE_SMC).takeUnretainedValue())
+                     IOServiceMatching(SMC.IOSERVICE_SMC))
 
         if (service == 0) {
             #if DEBUG
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - " +
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - " +
                         "\(SMC.IOSERVICE_SMC) service not found")
             #endif
 
@@ -632,7 +632,7 @@ public struct SMC {
     /**
     Close connection to the SMC
 
-    :returns: kIOReturnSuccess on successful close of connection to the SMC.
+    - returns: kIOReturnSuccess on successful close of connection to the SMC.
     */
     public mutating func close() -> kern_return_t {
         // Calling close twice or if connection not open returns the Mach IPC
@@ -642,7 +642,7 @@ public struct SMC {
 
         #if DEBUG
             if (result != kIOReturnSuccess) {
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - Failed to close")
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - Failed to close")
             }
         #endif
 
@@ -659,20 +659,20 @@ public struct SMC {
           getAllValidTemperatureKeys() discounts such sensors (even though
           isKeyValid() returns true).
 
-    :param: key The SMC key to check. 4 byte multi-character constant. Must be
+    - parameter key: The SMC key to check. 4 byte multi-character constant. Must be
                 4 characters in length.
-    :returns: valid True if the key is found, false otherwise
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: valid True if the key is found, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isKeyValid(key: String) -> (valid    : Bool,
                                             IOReturn : kern_return_t,
                                             kSMC     : UInt8) {
         var ans = false
 
-        if (count(key) != SMC.SMC_KEY_SIZE) {
+        if (key.characters.count != SMC.SMC_KEY_SIZE) {
             #if DEBUG
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - INVALID KEY" +
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - INVALID KEY" +
                         "SIZE")
             #endif
             return (ans, kIOReturnBadArgument, kSMC.kSMCError.rawValue)
@@ -697,7 +697,7 @@ public struct SMC {
     NOTE: Any sensor that reports a temperature of 0 is discounted.
           Temperature.HEATSINK_0 is known to do this.
 
-    :returns: Array of keys. For convenience, the array is sorted based on
+    - returns: Array of keys. For convenience, the array is sorted based on
               sensor names.
     */
     public func getAllValidTemperatureKeys() -> [Temperature] {
@@ -710,7 +710,7 @@ public struct SMC {
             }
         }
 
-        return sorted(SMCKeys, { Temperature.allValues[$0]! <
+        return SMCKeys.sort({ Temperature.allValues[$0]! <
                                  Temperature.allValues[$1]! })
     }
 
@@ -718,9 +718,9 @@ public struct SMC {
     /**
     Get the number of valid SMC keys for this machine.
 
-    :returns: numKeys The number of SMC keys
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: numKeys The number of SMC keys
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getNumSMCKeys() -> (numKeys  : UInt32,
                                     IOReturn : kern_return_t,
@@ -740,13 +740,13 @@ public struct SMC {
     /**
     Get the current temperature from a sensor
 
-    :param: key The temperature sensor to read from
-    :param: unit The unit for the temperature value (optional). Defaults to
+    - parameter key: The temperature sensor to read from
+    - parameter unit: The unit for the temperature value (optional). Defaults to
                  Celsius.
-    :returns: Temperature of sensor. If the sensor is not found, or an error
+    - returns: Temperature of sensor. If the sensor is not found, or an error
               occurs, return will be zero
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getTemperature(key  : Temperature,
                                unit : TemperatureUnit = .Celsius) ->
@@ -782,9 +782,9 @@ public struct SMC {
     TODO: What if its a 3rd party ODD that was swapped internally?
     TODO: What about the old Mac Pro that can have 2 ODD?
 
-    :returns: flag True if there is, false otherwise
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: flag True if there is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isOpticalDiskDriveFull() -> (flag     : Bool,
                                              IOReturn : kern_return_t,
@@ -807,9 +807,9 @@ public struct SMC {
     Max number of batteries supported by the machine. For desktops, this should
     be 0, and 1 for laptops.
 
-    :returns: count Max number of batteries supported by the machine
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: count Max number of batteries supported by the machine
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func maxNumberBatteries() -> (count    : UInt,
                                          IOReturn : kern_return_t,
@@ -824,9 +824,9 @@ public struct SMC {
     /**
     Is the machine being powered by the battery?
 
-    :returns: flag True if it is, false otherwise
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isBatteryPowered() -> (flag     : Bool,
                                        IOReturn : kern_return_t,
@@ -843,9 +843,9 @@ public struct SMC {
     /**
     Is the machine charing?
 
-    :returns: flag True if it is, false otherwise
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isCharging() -> (flag     : Bool,
                                  IOReturn : kern_return_t,
@@ -862,9 +862,9 @@ public struct SMC {
     /**
     Is AC power present?
 
-    :returns: flag True if it is, false otherwise
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isACPresent() -> (flag     : Bool,
                                   IOReturn : kern_return_t,
@@ -882,9 +882,9 @@ public struct SMC {
     Is the battery ok? Currently no details on exactly what this entails. Even
     if service battery warning is given by OS X, this still seems to return OK.
 
-    :returns: flag True if it is, false otherwise
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: flag True if it is, false otherwise
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func isBatteryOk() -> (flag     : Bool,
                                   IOReturn : kern_return_t,
@@ -906,10 +906,10 @@ public struct SMC {
     /**
     Get the name of a fan.
 
-    :param: fanNum The number of the fan to check
-    :returns: name The name of the fan. Return will be empty on error.
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - parameter fanNum: The number of the fan to check
+    - returns: name The name of the fan. Return will be empty on error.
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanName(fanNumber: UInt) -> (name     : String,
                                                 IOReturn : kern_return_t,
@@ -948,11 +948,11 @@ public struct SMC {
     /**
     Get the current speed (RPM - revolutions per minute) of a fan.
 
-    :param: fanNum The number of the fan to check
-    :returns: rpm The fan RPM. If the fan is not found, or an error occurs,
+    - parameter fanNum: The number of the fan to check
+    - returns: rpm The fan RPM. If the fan is not found, or an error occurs,
                   return will be zero
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanRPM(fanNumber: UInt) -> (rpm      : UInt,
                                                IOReturn : kern_return_t,
@@ -965,11 +965,11 @@ public struct SMC {
     /**
     Get the minimum speed (RPM - revolutions per minute) of a fan.
 
-    :param: fanNum The number of the fan to check
-    :returns: rpm The minimum fan RPM. If the fan is not found, or an error
+    - parameter fanNum: The number of the fan to check
+    - returns: rpm The minimum fan RPM. If the fan is not found, or an error
                   occurs, return will be zero
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanMinRPM(fanNumber: UInt) -> (rpm      : UInt,
                                                   IOReturn : kern_return_t,
@@ -982,11 +982,11 @@ public struct SMC {
     /**
     Get the maximum speed (RPM - revolutions per minute) of a fan.
 
-    :param: fanNum The number of the fan to check
-    :returns: rpm The maximum fan RPM. If the fan is not found, or an error
+    - parameter fanNum: The number of the fan to check
+    - returns: rpm The maximum fan RPM. If the fan is not found, or an error
                   occurs, return will be zero
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getFanMaxRPM(fanNumber: UInt) -> (rpm      : UInt,
                                                   IOReturn : kern_return_t,
@@ -999,9 +999,9 @@ public struct SMC {
     /**
     Get the number of fans on this machine.
 
-    :returns: numFans The number of fans
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: numFans The number of fans
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getNumFans() -> (numFans  : UInt,
                                  IOReturn : kern_return_t,
@@ -1018,9 +1018,9 @@ public struct SMC {
 
     WARNING: You are playing with hardware here, BE CAREFUL.
 
-    :param: fanNum The number of the fan to set
-    :param: rpm The speed you would like to set the fan to.
-    :returns: result True if successful, false otherwise.
+    - parameter fanNum: The number of the fan to set
+    - parameter rpm: The speed you would like to set the fan to.
+    - returns: result True if successful, false otherwise.
     */
     public func setFanMinRPM(fanNumber: UInt, RPM: UInt) ->
                                                       (result  : Bool,
@@ -1031,7 +1031,7 @@ public struct SMC {
 
         if maxRPM.kSMC == kSMC.kSMCKeyNotFound.rawValue {
             #if DEBUG
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - FAN # " +
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - FAN # " +
                         "\(fanNumber) NOT FOUND")
             #endif
             return (false, kIOReturnNotFound, maxRPM.kSMC)
@@ -1042,7 +1042,7 @@ public struct SMC {
              maxRPM.kSMC == kSMC.kSMCSuccess.rawValue &&
              RPM <= maxRPM.rpm) {
             #if DEBUG
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - UNSAFE RPM - " +
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - UNSAFE RPM - " +
                         "Max \(maxRPM.rpm) RPM")
             #endif
 
@@ -1072,10 +1072,10 @@ public struct SMC {
     /**
     Read data from the SMC
     
-    :param: keyID The SMC key index
-    :returns: Raw data return from the SMC
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - parameter keyID: The SMC key index
+    - returns: Raw data return from the SMC
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     public func getAllKeys() -> (dict      : Dictionary<String, Any>?,
         IOReturn : kern_return_t,
@@ -1173,10 +1173,10 @@ public struct SMC {
     /**
     Read data from the SMC
 
-    :param: key The SMC key
-    :returns: Raw data return from the SMC
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - parameter key: The SMC key
+    - returns: Raw data return from the SMC
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     private func readSMC(key: String) -> (data     : [UInt8],
                                           dataType : UInt32,
@@ -1250,10 +1250,10 @@ public struct SMC {
     /**
     Read data from the SMC
     
-    :param: keyIndex The SMC key index
-    :returns: Raw data return from the SMC
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - parameter keyIndex: The SMC key index
+    - returns: Raw data return from the SMC
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     private func readSMCByIndex(keyIndex: UInt32) -> (data     : [UInt8],
         dataType : UInt32,
@@ -1264,7 +1264,7 @@ public struct SMC {
             var result: kern_return_t
             var inputStruct  = SMCParamStruct()
             var outputStruct = SMCParamStruct()
-            var data         = [UInt8](count: 32, repeatedValue: 0)
+            let data         = [UInt8](count: 32, repeatedValue: 0)
             
             // First call to AppleSMC - get key info from index
             inputStruct.data8 = UInt8(Selector.kSMCGetKeyFromIndex.rawValue)
@@ -1284,8 +1284,8 @@ public struct SMC {
     /**
     Write data to the SMC.
 
-    :returns: IOReturn IOKit return code
-    :returns: kSMC SMC return code
+    - returns: IOReturn IOKit return code
+    - returns: kSMC SMC return code
     */
     private func writeSMC(key      : String,
                           data     : [UInt8],
@@ -1311,7 +1311,7 @@ public struct SMC {
         if (dataSize != outputStruct.keyInfo.dataSize ||
             dataType.rawValue != SMC.decodeSMCKey(outputStruct.keyInfo.dataType)) {
             #if DEBUG
-                println("ERROR - \(__FILE__):\(__FUNCTION__) - INVALID DATA - "
+                print("ERROR - \(__FILE__):\(__FUNCTION__) - INVALID DATA - "
                         + "Expected input = \(outputStruct.keyInfo)")
             #endif
             return (kIOReturnBadArgument, kSMC.kSMCError.rawValue)
@@ -1364,9 +1364,9 @@ public struct SMC {
     /**
     Make a call to the SMC
 
-    :param: inputStruct Struct that holds data telling the SMC what you want
-    :param: outputStruct Struct holding the SMC's response
-    :returns: IOKit return code
+    - parameter inputStruct: Struct that holds data telling the SMC what you want
+    - parameter outputStruct: Struct holding the SMC's response
+    - returns: IOKit return code
     */
     private func callSMC(inout inputStruct : SMCParamStruct,
                          inout outputStruct: SMCParamStruct) -> kern_return_t {
@@ -1376,9 +1376,9 @@ public struct SMC {
     /**
     Make a call to the SMC
     
-    :param: inputStruct Struct that holds data telling the SMC what you want
-    :param: outputStruct Struct holding the SMC's response
-    :returns: IOKit return code
+    - parameter inputStruct: Struct that holds data telling the SMC what you want
+    - parameter outputStruct: Struct holding the SMC's response
+    - returns: IOKit return code
     */
     private func callSMC(inout inputStruct : SMCParamStruct,
         inout outputStruct: SMCParamStruct, selector: UInt32) -> kern_return_t {
@@ -1390,7 +1390,7 @@ public struct SMC {
                 // Depending how far off this is from 80, call may or may not
                 // work
                 if inputStructSize != 80 {
-                    println("WARNING - \(__FILE__):\(__FUNCTION__) - SMCParamStruct"
+                    print("WARNING - \(__FILE__):\(__FUNCTION__) - SMCParamStruct"
                         + " size is \(inputStructSize) bytes. Expected 80")
                     
                     return kIOReturnBadArgument
@@ -1408,7 +1408,7 @@ public struct SMC {
             
             #if DEBUG
                 if result != kIOReturnSuccess {
-                    println("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
+                    print("ERROR - \(__FILE__):\(__FUNCTION__) - IOReturn = " +
                         "\(result) - kSMC = \(outputStruct.result)")
                 }
             #endif
@@ -1429,8 +1429,8 @@ public struct SMC {
         var buffer = [CChar](count: CStringCount, repeatedValue: 0)
 
         #if DEBUG
-            if count(key) != SMC_KEY_SIZE {
-                println("WARN - \(__FILE__):\(__FUNCTION__) - Invalid key size")
+            if key.characters.count != SMC_KEY_SIZE {
+                print("WARN - \(__FILE__):\(__FUNCTION__) - Invalid key size")
             }
         #endif
 
@@ -1439,11 +1439,8 @@ public struct SMC {
         // to get CString
         key.getCString(&buffer, maxLength: CStringCount,
                                 encoding: String.defaultCStringEncoding())
-
-        return UInt32(buffer[0]) << 24 +
-               UInt32(buffer[1]) << 16 +
-               UInt32(buffer[2]) << 8  +
-               UInt32(buffer[3])
+        let temp32 = UInt32(buffer[0]) << 24 + UInt32(buffer[1]) << 16
+        return temp32 + UInt32(buffer[2]) << 8 + UInt32(buffer[3])
     }
 
 
@@ -1468,8 +1465,8 @@ public struct SMC {
 
     https://stackoverflow.com/questions/22160746/fpe2-and-sp78-data-types
 
-    :param: data Data from the SMC to be converted. Assumed data size of 2.
-    :returns: Converted data
+    - parameter data: Data from the SMC to be converted. Assumed data size of 2.
+    - returns: Converted data
     */
     public static func decodeFPE2(data: (UInt8, UInt8)) -> UInt {
         return (UInt(data.0) << 6) + (UInt(data.1) >> 2)
@@ -1494,8 +1491,8 @@ public struct SMC {
     /**
     Celsius to Fahrenheit
 
-    :param: temperature Temperature in Celsius
-    :returns: Temperature in Fahrenheit
+    - parameter temperature: Temperature in Celsius
+    - returns: Temperature in Fahrenheit
     */
     private static func toFahrenheit(temperature: Double) -> Double {
         // https://en.wikipedia.org/wiki/Fahrenheit#Definition_and_conversions
@@ -1506,8 +1503,8 @@ public struct SMC {
     /**
     Celsius to Kelvin
 
-    :param: temperature Temperature in Celsius
-    :returns: Temperature in Kelvin
+    - parameter temperature: Temperature in Celsius
+    - returns: Temperature in Kelvin
     */
     private static func toKelvin(temperature: Double) -> Double {
         // https://en.wikipedia.org/wiki/Kelvin
