@@ -41,16 +41,48 @@ let SMCKitToolVersion     = "0.2.0-dev"
 let maxTemperatureCelsius = 128.0
 
 //------------------------------------------------------------------------------
-// MARK: Enums
+// MARK: Color Palette
 //------------------------------------------------------------------------------
 
-enum ANSIColor: String {
-    case Off    = "\u{001B}[0;0m"
-    case Red    = "\u{001B}[0;31m"
-    case Green  = "\u{001B}[0;32m"
-    case Yellow = "\u{001B}[0;33m"
-    case Blue   = "\u{001B}[0;34m"
+struct Color {
+    var rawValue : String;
+    init() {
+        self.rawValue = "";
+    }
+    init(fromRawValue rv: String) {
+        self.rawValue = rv;
+    }
 }
+
+class ColorPalette { // Plain/Null Color Pallette
+    let nullColor = Color();
+    var Off : Color
+    var Red : Color
+    var Green : Color
+    var Yellow : Color
+    var Blue : Color
+    
+    init() {
+        Off = nullColor
+        Red = nullColor
+        Green = nullColor
+        Yellow = nullColor
+        Blue = nullColor
+    }
+}
+
+class ANSIColor : ColorPalette { // ANSIColor Palette is a ColorPalette
+    override init() {
+        super.init();
+        Off = Color(fromRawValue: "\u{001B}[0;0m")
+        Red = Color(fromRawValue:"\u{001B}[0;31m")
+        Green = Color(fromRawValue:"\u{001B}[0;32m")
+        Yellow = Color(fromRawValue:"\u{001B}[0;33m")
+        Blue =  Color(fromRawValue:"\u{001B}[0;34m")
+    }
+}
+
+var colorPalette : ColorPalette;
 
 //------------------------------------------------------------------------------
 // MARK: CLI
@@ -110,6 +142,8 @@ do {
     exit(EX_USAGE)
 }
 
+colorPalette =  (CLIColorOption.wasSet) ?  ANSIColor() :  ColorPalette()
+
 // Give precedence to help flag
 if CLIHelpOption.wasSet {
     CLI.printUsage()
@@ -124,24 +158,24 @@ if CLIHelpOption.wasSet {
 //------------------------------------------------------------------------------
 
 func warningLevel(value: Double, maxValue: Double) -> (name: String,
-                                                       color: ANSIColor) {
+                                                       color: Color) {
     let percentage = value / maxValue
 
     switch percentage {
     // TODO: Is this safe? Rather, is this the best way to go about this?
-    case -Double.infinity...0: return ("Cool", ANSIColor.Blue)
-    case 0...0.45:             return ("Nominal", ANSIColor.Green)
-    case 0.45...0.75:          return ("Danger", ANSIColor.Yellow)
-    default:                   return ("Crisis", ANSIColor.Red)
+    case -Double.infinity...0: return ("Cool", colorPalette.Blue)
+    case 0...0.45:             return ("Nominal", colorPalette.Green)
+    case 0.45...0.75:          return ("Danger", colorPalette.Yellow)
+    default:                   return ("Crisis", colorPalette.Red)
     }
 }
 
 func colorBoolOutput(value: Bool) -> String {
-    let color: ANSIColor
-    if CLIColorOption.wasSet { color = value ? ANSIColor.Green : ANSIColor.Red }
-    else                     { color = ANSIColor.Off }
+    let color: Color
+    if CLIColorOption.wasSet { color = value ? colorPalette.Green : colorPalette.Red }
+    else                     { color = colorPalette.Off }
 
-    return "\(color.rawValue)\(value)\(ANSIColor.Off.rawValue)"
+    return "\(color.rawValue)\(value)\(colorPalette.Off.rawValue)"
 }
 
 func printTemperatureInformation(known: Bool = true) {
@@ -183,13 +217,13 @@ func printTemperatureInformation(known: Bool = true) {
             print("NA")
             return
         }
-
+        
         let warning = warningLevel(value: temperature, maxValue: maxTemperatureCelsius)
         let level   = CLIWarnOption.wasSet ? "(\(warning.name))" : ""
-        let color   = CLIColorOption.wasSet ? warning.color : ANSIColor.Off
+        let color   = warning.color;
 
         print("\(color.rawValue)\(temperature)°C \(level)" +
-              "\(ANSIColor.Off.rawValue)")
+              "\(colorPalette.Off.rawValue)")
     }
 }
 
@@ -219,9 +253,9 @@ func printFanInformation() {
         let warning = warningLevel(value: Double(currentSpeed),
                                    maxValue: Double(fan.maxSpeed))
         let level = CLIWarnOption.wasSet ? "(\(warning.name))" : ""
-        let color = CLIColorOption.wasSet ? warning.color : ANSIColor.Off
+        let color = warning.color;
         print("\tCurrent:  \(color.rawValue)\(currentSpeed) RPM \(level)" +
-                                                    "\(ANSIColor.Off.rawValue)")
+                                                    "\(colorPalette.Off.rawValue)")
     }
 }
 

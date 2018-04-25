@@ -42,3 +42,5 @@ nbproject
 *.sublime-project
 *.sublime-workspace
 /bin
+
+SMCKit.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
