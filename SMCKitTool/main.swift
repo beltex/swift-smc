@@ -161,19 +161,17 @@ func printTemperatureInformation(known: Bool = true) {
         return
     }
 
+    let sensorWithLongestName = sensors.max { $0.name.count <
+                                                     $1.name.count }
 
-    let sensorWithLongestName = sensors.max { $0.name.characters.count <
-                                                     $1.name.characters.count }
-
-    guard let longestSensorNameCount = sensorWithLongestName?.name.characters.count else {
+    guard let longestSensorNameCount = sensorWithLongestName?.name.count else {
         print("No temperature sensors found")
         return
     }
 
-
     for sensor in sensors {
         let padding = String(repeating: " ",
-                             count: longestSensorNameCount - sensor.name.characters.count)
+                             count: longestSensorNameCount - sensor.name.count)
 
         let smcKey  = CLIDisplayKeysOption.wasSet ? "(\(sensor.code.toString()))" : ""
         print("\(sensor.name + padding)   \(smcKey)  ", terminator: "")
@@ -255,6 +253,17 @@ func printMiscInformation() {
     }
 
     print("Disc in ODD:      \(colorBoolOutput(value: ODDStatus))")
+    
+    let SMCTime: clockInfo
+    do {
+        SMCTime = try SMCKit.getSMCClockTimeInSeconds()
+    }
+      catch {
+        print(error)
+        return
+    }
+    
+    print("SMC Clock:       \(SMCTime.timeSeconds)")
 }
 
 func printAll() {
@@ -265,7 +274,7 @@ func printAll() {
 }
 
 func checkKey(key: String) {
-    if key.characters.count != 4 {
+    if key.count != 4 {
         print("Must be a FourCC (four-character code)")
         return
     }
@@ -327,14 +336,12 @@ let printAllOptionsCount = wasSetOptions.filter {
 
 if printAllOptionsCount == wasSetOptions.count { printAll() }
 
-
 if let fanId = CLIFanIdOption.value, let fanSpeed = CLIFanSpeedOption.value {
     setMinFanSpeed(fanId: fanId, fanSpeed: fanSpeed)
 }
 else if CLIFanIdOption.wasSet != CLIFanSpeedOption.wasSet {
     print("Usage: Must set fan number (-n) AND fan speed (-s)")
 }
-
 
 if let key = CLICheckKeyOption.value { checkKey(key: key) }
 
