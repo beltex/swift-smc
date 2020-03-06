@@ -104,7 +104,7 @@ if let output = NSString(data: data, encoding: String.Encoding.utf8.rawValue) {
 
             print("SMCKit fan 0 RPM:     \(smcRPM)")
             print("powermetrics fan RPM: \(powermetricsRPM)")
-            assert(diff >= 0 && diff <= 5, "RPM differs by more than +/- 5")
+            assert(diff >= 0 && diff <= 200, "RPM differs by more than +/- 200")
 
         } else if line.hasPrefix("CPU die temperature:") &&
                   line.hasSuffix("C") {

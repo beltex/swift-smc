@@ -32,8 +32,8 @@ For more see:
 
 ### Requirements
 
-- [Xcode 9.0 (Swift 4.0)](https://developer.apple.com/xcode/downloads/)
-- macOS 10.12 Sierra and above **for development** (due to Xcode)
+- [Xcode 11.3.1 (Swift 5.0)](https://developer.apple.com/xcode/downloads/)
+- macOS 10.15 Sierra and above **for development** (due to Xcode)
 - OS X 10.9 Mavericks and above **for use** (due to Swift)
 
 
@@ -84,7 +84,11 @@ HEATSINK_1              34.0°C
 MEM_SLOTS_PROXIMITY     36.0°C
 PALM_REST               27.0°C
 -- Fan --
-[id 0] Right Side
+[id 0] Left side
+    Min:      2160 RPM
+    Max:      5927 RPM
+    Current:  2158 RPM
+[id 1] Right Side
     Min:      1299 RPM
     Max:      6199 RPM
     Current:  1292 RPM
@@ -96,6 +100,7 @@ Battery Ok:       true
 Battery Count:    1
 -- Misc --
 Disc in ODD:      false
+SMC Clock:        32998
 ```
 
 

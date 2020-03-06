@@ -96,7 +96,7 @@ extension Double {
 public extension FourCharCode {
 
     init(fromString str: String) {
-        precondition(str.characters.count == 4)
+        precondition(str.count == 4)
 
         self = str.utf8.reduce(0) { sum, character in
             return sum << 8 | UInt32(character)
@@ -434,6 +434,19 @@ extension SMCKit {
 
         return true
     }
+    
+    public static func hexStringToAscii(_ hexString : String) -> String {
+
+        let pattern = "(0x)?([0-9a-f]{2})"
+        let regex = try! NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+        let nsString = hexString as NSString
+        let matches = regex.matches(in: hexString, options: [], range: NSMakeRange(0, nsString.length))
+        let characters = matches.map {
+            Character(UnicodeScalar(UInt32(nsString.substring(with: $0.range(at: 2)), radix: 16)!)!)
+        }
+        return String(characters)
+    }
+
 }
 
 //------------------------------------------------------------------------------
@@ -560,18 +573,18 @@ public struct TemperatureSensor {
 }
 
 public enum TemperatureUnit {
-    case celius
+    case celsius
     case fahrenheit
     case kelvin
 
-    public static func toFahrenheit(_ celius: Double) -> Double {
+    public static func toFahrenheit(_ celsius: Double) -> Double {
         // https://en.wikipedia.org/wiki/Fahrenheit#Definition_and_conversions
-        return (celius * 1.8) + 32
+        return (celsius * 1.8) + 32
     }
 
-    public static func toKelvin(_ celius: Double) -> Double {
+    public static func toKelvin(_ celsius: Double) -> Double {
         // https://en.wikipedia.org/wiki/Kelvin
-        return celius + 273.15
+        return celsius + 273.15
     }
 }
 
@@ -590,27 +603,26 @@ extension SMCKit {
 
     public static func allUnknownTemperatureSensors() throws -> [TemperatureSensor] {
         let keys = try allKeys()
-
         return keys.filter { $0.code.toString().hasPrefix("T") &&
                              $0.info == DataTypes.SP78 &&
                              TemperatureSensors.all[$0.code] == nil }
-                   .map { TemperatureSensor(name: "Unknown", code: $0.code) }
+            .map { TemperatureSensor(name: "Unknown - \($0.code.toString())", code: $0.code) }
     }
 
     /// Get current temperature of a sensor
     public static func temperature(_ sensorCode: FourCharCode,
-                             unit: TemperatureUnit = .celius) throws -> Double {
+                             unit: TemperatureUnit = .celsius) throws -> Double {
         let data = try readData(SMCKey(code: sensorCode, info: DataTypes.SP78))
 
-        let temperatureInCelius = Double(fromSP78: (data.0, data.1))
+        let temperatureInCelsius = Double(fromSP78: (data.0, data.1))
 
         switch unit {
-        case .celius:
-            return temperatureInCelius
+        case .celsius:
+            return temperatureInCelsius
         case .fahrenheit:
-            return TemperatureUnit.toFahrenheit(temperatureInCelius)
+            return TemperatureUnit.toFahrenheit(temperatureInCelsius)
         case .kelvin:
-            return TemperatureUnit.toKelvin(temperatureInCelius)
+            return TemperatureUnit.toKelvin(temperatureInCelsius)
         }
     }
 }
@@ -733,6 +745,11 @@ extension SMCKit {
 }
 
 //------------------------------------------------------------------------------
+// MARK: Power
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
 // MARK: Miscellaneous
 //------------------------------------------------------------------------------
 
@@ -784,4 +801,22 @@ extension SMCKit {
                            isBatteryOk: isBatteryOk,
                            isCharging: isCharging)
     }
+}
+
+public struct clockInfo {
+    public let timeSeconds: UInt32
+}
+
+extension SMCKit {
+    public static func getSMCClockTimeInSeconds() throws -> clockInfo {
+        let clockKey = SMCKey(code: FourCharCode(fromStaticString: "CLKT"),
+        info: DataTypes.UInt32)
+        
+        let timeSecondsData = try readData(clockKey)
+
+        let timeSecondsCount = UInt32(uint32(fromBytes: (timeSecondsData.0, timeSecondsData.1, timeSecondsData.2, timeSecondsData.3)))
+        
+        return clockInfo(timeSeconds: timeSecondsCount)
+    }
+    
 }
